@@ -1,2 +1,2 @@
 # Hobby-Projects
-Projects worked on in the free time
+Projects worked on during the free time
