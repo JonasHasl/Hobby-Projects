@@ -1,0 +1,182 @@
+#This is a Template of dynamic stock selection.
+#You can try your own fundamental factor and ranking method by editing the CoarseSelectionFunction and FineSelectionFunction
+import operator
+from math import ceil,floor
+from itertools import groupby
+from datetime import datetime, timedelta
+from AlgorithmImports import *
+from QuantConnect.DataSource import *
+from QuantConnect.Data.UniverseSelection import *
+
+class QuiverWallStreetBetsDataAlgorithm(QCAlgorithm):
+    def Initialize(self):
+        self.SetStartDate(2021, 1, 1)
+        #self.SetEndDate(2021, 1, 1)
+        self.SetCash(1000000)
+        
+        
+        #tickers = [u'AAPL', u'C', u'XOM', u'JPM', u'GOOG', u'MSFT', u'LVS', u'INTC', u'AMZN', 
+        #   u'CSCO', u'F', u'WFC', u'NFLX', u'FCX', u'QCOM', u'PBR', u'GS', u'JNJ', u'WMT',
+        #   u'VALE', u'HPQ', u'GE', u'CVX', u'ORCL', u'IBM', u'POT', u'BIDU', u'MRK', u'PG', u'VZ',
+        #   u'KO', u'PCLN', u'MS', u'BP', u'CMCSA', u'MCD', u'PFE', u'T', u'COP', u'CAT', 
+        #   u'SLB', u'MA', u'BA', u'DTV', u'APC', u'V', u'MOS', u'PEP', u'EBAY', u'NEM', u'NTAP',
+        #   u'AMGN', u'WYNN', u'CRM', u'CLX', u'S', u'ABX', u'OXY', u'ABT', u'TEVA', u'USB', u'FFIV', 
+        #   u'GILD', u'MON', u'NVDA', u'SLW', u'HAL', u'AXP', u'MGM', u'TGT', u'MU', u'UPS', u'BTU',
+        #   u'EXPE', u'CLF', u'CNX', u'ESRX', u'PM', u'MET', u'CMG', u'CF', u'UNH', u'BBY', u'CHK',
+        #   u'COST', u'RIG', u'AIG', u'EMR', u'CME', u'CVS', u'DIS', u'CL', u'UNP', u'DE', u'DD',
+        #   u'NOV', u'HD', u'GME', u'AMC']
+        
+        tickers = ['SPY', 'QQQ', 'CPI','GME', 'HTZ', 'AMC', 'TSLA', 'PTON', 'HOOD', 'RBLX', 'PLTR', 'UVXY', 'SNAP', 'WW', 'BABA', 'WISH', 'NVAX', 'SOFI', 'BB', 'CLOV', 'NOK', 'NIO', 'TLRY', 'RKT', 'CLNE', 'SNDL', 'MVIS', 'SPCE', 'CRSR', 'UPST', 'HQY', 'AFRM', 'DWAC', 'ABT', 'ABBV', 'ABMD', 'ACN', 'ATVI', 'ADBE', 'AMD', 'AAP', 'AES', 'AFL', 'A', 'APD', 'AKAM', 'ALK', 'ALB', 'ARE', 'ALGN', 'ALLE', 'ALL', 'AMZN', 'AMCR', 'AEE', 'AAL', 'AEP', 'AXP', 'AIG', 'AMT',
+        'AWK', 'AMP', 'ABC', 'AME', 'AMGN', 'APH', 'ADI', 'ANSS', 'ANTM', 'AON', 'AOS', 'APA', 'AAPL', 'AMAT', 'APTV', 'ADM', 'ANET', 'AJG', 'AIZ', 'ATO', 'ADSK', 'ADP', 'AZO', 'AVB', 'AVY', 'AVGO', 'BKR', 'BLL',
+        'BAC', 'BBWI', 'BAX', 'BDX', 'BRK.B', 'BBY', 'BIO', 'BIIB', 'BLK', 'BK', 'BA', 'BKNG', 'BWA', 'BXP', 'BSX', 'BMY', 'BR', 'BRO', 'BF.B', 'BEN', 'CHRW', 'CDNS', 'CZR', 'CPB', 'COF', 'CAH', 'CCL', 'CARR', 'CTLT',
+        'CAT', 'CBOE', 'CBRE', 'CDW', 'CE', 'CNC', 'CNP', 'CDAY', 'CERN', 'CF', 'CRL', 'CHTR', 'CVX', 'CMG', 'CB', 'CHD', 'CI', 'CINF', 'CTAS', 'CSCO', 'C', 'CFG', 'CTXS', 'CLX', 'CME', 'CMS', 'CTSH', 'CL', 'CMCSA',
+        'CMA', 'CAG', 'COP', 'COO', 'CPRT', 'CTVA', 'COST', 'CTRA', 'CCI', 'CSX', 'CMI', 'CVS', 'CRM', 'DHI', 'DHR', 'DRI', 'DVA', 'DE', 'DAL', 'DVN', 'DXCM', 'DLR', 'DFS', 'DISCA', 'DISCK', 'DISH', 'DG', 'DLTR', 'D',
+        'DPZ', 'DOV', 'DOW', 'DTE', 'DUK', 'DRE', 'DD', 'DXC', 'DGX', 'DIS', 'ED', 'EMN', 'ETN', 'EBAY', 'ECL', 'EIX', 'EW', 'EA', 'EMR', 'ENPH', 'ETR', 'EOG', 'EFX', 'EQIX', 'EQR', 'ESS', 'EL', 'ETSY', 'EVRG', 'ES', 'EXC',
+        'EXPE', 'EXPD', 'EXR', 'FANG', 'FFIV', 'FB', 'FAST', 'FRT', 'FDX', 'FIS', 'FITB', 'FE', 'FRC', 'FISV', 'FLT', 'FMC', 'F', 'FTNT', 'FTV', 'FBHS', 'FOXA', 'FOX', 'FCX', 'GOOGL', 'GOOG', 'GLW', 'GPS', 'GRMN', 'GNRC', 'GD',
+        'GE', 'GIS', 'GM', 'GPC', 'GILD', 'GL', 'GPN', 'GS', 'GWW', 'HAL', 'HBI', 'HIG', 'HAS', 'HCA', 'HSIC', 'HSY', 'HES', 'HPE', 'HLT', 'HOLX', 'HD', 'HON', 'HRL', 'HST', 'HWM', 'HPQ', 'HUM', 'HBAN', 'HII', 'IT', 'IEX', 'IDXX',
+        'INFO', 'ITW', 'ILMN', 'INCY', 'IR', 'INTC', 'ICE', 'IBM', 'IP', 'IPG', 'IFF', 'INTU', 'ISRG', 'IVZ', 'IPGP', 'IQV', 'IRM', 'JKHY', 'J', 'JBHT', 'JNJ', 'JCI', 'JPM', 'JNPR', 'KMX', 'KO', 'KSU', 'K', 'KEY', 'KEYS', 'KMB', 'KIM',
+        'KMI', 'KLAC', 'KHC', 'KR', 'LNT', 'LHX', 'LH', 'LRCX', 'LW', 'LVS', 'LEG', 'LDOS', 'LEN', 'LLY', 'LNC', 'LIN', 'LYV', 'LKQ', 'LMT', 'L', 'LOW', 'LUMN', 'LYB', 'LUV', 'MMM', 'MO', 'MTB', 'MRO', 'MPC', 'MKTX', 'MAR', 'MMC', 'MLM',
+        'MAS', 'MA', 'MTCH', 'MKC', 'MCD', 'MCK', 'MDT', 'MRK', 'MET', 'MTD', 'MGM', 'MCHP', 'MU', 'MSFT', 'MAA', 'MRNA', 'MHK', 'MDLZ', 'MPWR', 'MNST', 'MCO', 'MS', 'MOS', 'MSI', 'MSCI', 'NDAQ', 'NTAP', 'NFLX', 'NWL', 'NEM', 'NWSA', 'NWS',
+        'NEE', 'NLSN', 'NKE', 'NI', 'NSC', 'NTRS', 'NOC', 'NLOK', 'NCLH', 'NRG', 'NUE', 'NVDA', 'NVR', 'NXPI', 'NOW', 'ORLY', 'OXY', 'ODFL', 'OMC', 'OKE', 'ORCL', 'OGN', 'OTIS', 'O', 'PEAK', 'PCAR', 'PKG', 'PH', 'PAYX', 'PAYC', 'PYPL', 'PENN',
+        'PNR', 'PBCT', 'PEP', 'PKI', 'PFE', 'PM', 'PSX', 'PNW', 'PXD', 'PNC', 'POOL', 'PPG', 'PPL', 'PFG', 'PG', 'PGR', 'PLD', 'PRU', 'PTC', 'PEG', 'PSA', 'PHM', 'PVH', 'PWR', 'QRVO', 'QCOM', 'RE', 'RL', 'RJF', 'RTX', 'REG', 'REGN', 'RF', 'RSG',
+        'RMD', 'RHI', 'ROK', 'ROL', 'ROP', 'ROST', 'RCL', 'SCHW', 'STZ', 'SJM', 'SPGI', 'SBAC', 'SLB', 'STX', 'SEE', 'SRE', 'SHW', 'SPG', 'SWKS', 'SNA', 'SO', 'SWK', 'SBUX', 'STT', 'STE', 'SYK', 'SIVB', 'SYF', 'SNPS', 'SYY', 'T', 'TECH', 'TAP', 'TMUS',
+        'TROW', 'TTWO', 'TPR', 'TGT', 'TEL', 'TDY', 'TFX', 'TER', 'TSLA', 'TXN', 'TXT', 'TMO', 'TJX', 'TSCO', 'TT', 'TDG', 'TRV', 'TRMB', 'TFC', 'TWTR', 'TYL', 'TSN', 'UDR', 'ULTA', 'USB', 'UAA', 'UA', 'UNP', 'UAL', 'UNH', 'UPS', 'URI', 'UHS', 'VLO', 'VTR',
+        'VRSN', 'VRSK', 'VZ', 'VRTX', 'VFC', 'VIAC', 'VTRS', 'V', 'VNO', 'VMC', 'WRB', 'WAB', 'WMT', 'WBA', 'WM', 'WAT', 'WEC', 'WFC', 'WELL', 'WST', 'WDC', 'WU', 'WRK', 'WY', 'WHR', 'WMB', 'WLTW', 'WYNN', 'XRAY', 'XOM', 'XEL', 'XLNX', 'XYL', 'YUM', 'ZBRA', 'ZBH', 'ZION', 'ZTS']
+        symbols = [ Symbol.Create(ticker, SecurityType.Equity, Market.USA) for ticker in tickers ]
+        
+        #Comments about universe selection: This is not a model to be used for later use. It will only look at historical data and how popular reddit stocks have performed the last year. We therefore will only choose S&P500 stocks and add popular reddit stocks in the recent past.
+        
+        #symbols = [ Symbol.Create("NFLX", SecurityType.Equity, Market.USA), 
+        #Symbol.Create("GME", SecurityType.Equity, Market.USA), 
+        #Symbol.Create("NVDA", SecurityType.Equity, Market.USA),
+        #Symbol.Create("TSLA", SecurityType.Equity, Market.USA), 
+        #Symbol.Create("AMD", SecurityType.Equity, Market.USA),
+        #Symbol.Create("FB", SecurityType.Equity, Market.USA),
+        #Symbol.Create("AAPL", SecurityType.Equity, Market.USA),
+        #Symbol.Create("QQQ", SecurityType.Equity, Market.USA),
+        #Symbol.Create("GLD", SecurityType.Equity, Market.USA)
+        #]
+        #[ Symbol.Create("AMC", SecurityType.Equity, Market.USA) ]
+        self.AddUniverseSelection(ManualUniverseSelectionModel(symbols))
+        
+        #self.AddUniverseSelection(FineFundamentalUniverseSelectionModel(self.SelectCoarse, self.SelectFine))
+        #self.num_coarse = 1000
+        #self.num_fine = 50
+        #self.spy = self.AddEquity("SPY", Resolution.Daily).Symbol
+        #self.SetBenchmark('SPY')
+        #self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Cash)
+        
+        self.UniverseSettings.Resolution = Resolution.Daily
+        
+        self.AddAlpha(WallStreamBetsAlphaModel())
+        
+        self.SetPortfolioConstruction(EqualWeightingPortfolioConstructionModel())
+        
+        self.AddRiskManagement(NullRiskManagementModel())
+        
+        self.SetExecution(ImmediateExecutionModel())
+        
+        #self.next = self.Time
+        #self.spy = self.AddEquity("SPY", Resolution.Daily).Symbol
+        #self.SetBenchmark('SPY')
+        #self.Schedule.On(self.DateRules.WeekStart(self.spy), 
+        #self.TimeRules.AfterMarketOpen(self.spy,180), Action(self.rebalance))
+        
+        
+    def OnData(self, data):
+        
+        
+        #for symbol, security_holding in self.Portfolio.items():
+            #self.Plot('Quantity', str(symbol), security_holding.Quantity)
+            
+        invested = [x.Key for x in self.Portfolio if x.Value.Invested]
+        self.Debug(str(len(invested)))
+        
+        for symbol in invested:
+            security_holding = self.Portfolio[symbol]
+            #total_holding = security_holding.TotalHoldingsValue
+            quantity = security_holding.Quantity
+            price = security_holding.AveragePrice
+            self.Debug(str(symbol) + " " + str(quantity))
+        
+    
+  
+class WallStreamBetsAlphaModel(AlphaModel):
+    
+    symbol_data_by_symbol = {}
+    
+    def __init__(self, rank_threshold=10, sentiment_threshold=0.02):
+        self.rank_threshold = rank_threshold
+        self.sentiment_threshold = sentiment_threshold
+    
+    def Update(self, algorithm, data):
+        
+        self.insights = []
+        
+        points = data.Get(QuiverWallStreetBets)
+        for point in points.Values:
+            # Buy if the stock was mentioned more than 5 times in the WallStreetBets daily discussion, otherwise short sell
+            target_direction = InsightDirection.Up if float(point.Rank) < float(self.rank_threshold) and float(point.Sentiment) > self.sentiment_threshold else InsightDirection.Flat#
+           # elif InsightDirection.Down if float(point.Rank) < float(self.rank_threshold) and float(point.Sentiment) < self.sentiment_threshold else InsightDirection.Flat
+            #if point.Rank < self.rank_threshold else point.Rank InsightDirection.Flat
+            self.symbol_data_by_symbol[point.Symbol.Underlying].target_direction = target_direction
+            
+        for symbol, symbol_data in self.symbol_data_by_symbol.items():
+            # Ensure we have security data for the current Slice
+            if not (data.ContainsKey(symbol) and data[symbol] is not None):
+                continue
+            
+            if symbol_data.target_direction is not None:
+                self.insights += [Insight.Price(symbol, timedelta(1), symbol_data.target_direction)]
+                symbol_data.target_direction = None
+
+        return self.insights
+        #self.insights = insights
+        #self.Debug(str(insights))
+        
+        for symbol in self.insights:
+        ##    security_holding = self.symbol_data_by_symbol[symbol]
+            #total_holding = security_holding.TotalHoldingsValue
+         #   quantity = security_holding.Quantity
+         #   price = security_holding.AveragePrice
+            algorithm.Debug(str(symbol)) #+ " " + str(quantity))
+        
+        
+    def OnSecuritiesChanged(self, algorithm, changes):
+        for security in changes.AddedSecurities:
+            symbol = security.Symbol
+            self.symbol_data_by_symbol[symbol] = SymbolData(algorithm, symbol)
+        
+        for security in changes.RemovedSecurities:
+            symbol_data = self.symbol_data_by_symbol.pop(security.Symbol, None)
+            if symbol_data:
+                symbol_data.dispose()
+        
+        algorithm.Debug('remained to select %d'%(len(self.symbol_data_by_symbol)))
+                
+        #invested = [x.Symbol for x in self.symbol_data_by_symbol]
+        
+        #for symbol in self.symbol_data_by_symbol:
+        ##    security_holding = self.symbol_data_by_symbol[symbol]
+            #total_holding = security_holding.TotalHoldingsValue
+         #   quantity = security_holding.Quantity
+         #   price = security_holding.AveragePrice
+        #    algorithm.Debug(str(symbol)) #+ " " + str(quantity))
+                
+                
+class SymbolData:
+    target_direction = None
+    
+    def __init__(self, algorithm, symbol):
+        self.algorithm = algorithm
+        
+        # Requesting data
+        self.quiver_wsb_symbol = algorithm.AddData(QuiverWallStreetBets, symbol).Symbol
+        
+        # Historical data
+        history = algorithm.History(self.quiver_wsb_symbol, 1, Resolution.Daily)
+        #algorithm.Debug(f"We got {len(history)} items from our history request for {symbol} Quiver WallStreetBets data")
+        #algorithm.Debug(f"{symbol}")
+    def dispose(self):
+        # Unsubscribe from the Quiver WallStreetBets feed for this security
+        self.algorithm.RemoveSecurity(self.quiver_wsb_symbol)
