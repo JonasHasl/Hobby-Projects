@@ -342,4 +342,4 @@ class BasicTemplateAlgorithm(QCAlgorithm):
             #total_holding = security_holding.TotalHoldingsValue
             quantity = security_holding.Quantity
             price = security_holding.AveragePrice
-            self.Debug(str(symbol) + " " + str(quantity))
+            self.Debug(str(symbol) + " " + str(quantity)).
