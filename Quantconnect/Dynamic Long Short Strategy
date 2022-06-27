@@ -16,7 +16,7 @@ class BasicTemplateAlgorithm(QCAlgorithm):
     # set the flag for rebalance
         self.reb = 1
     # Number of stocks to pass CoarseSelection process
-        self.num_coarse = 900
+        self.num_coarse = 8
     # Number of stocks to long/short
         self.num_fine = 7 #Watch out for adjustment of outliers in line 297
         self.symbols = None
@@ -41,7 +41,7 @@ class BasicTemplateAlgorithm(QCAlgorithm):
 
 
     # Schedule the rebalance function to execute at the begining of each week
-        self.Schedule.On(self.DateRules.WeekStart(self.spy), #Every(DayOfWeek.Tuesday, DayOfWeek.Friday),#(self.spy), 
+        self.Schedule.On(self.DateRules.EveryDay(self.spy), #Every(DayOfWeek.Tuesday, DayOfWeek.Friday),#(self.spy), 
         self.TimeRules.AfterMarketOpen(self.spy,1), Action(self.rebalance))
 
         from System.Drawing import Color
@@ -404,13 +404,13 @@ class BasicTemplateAlgorithm(QCAlgorithm):
                 # 
         #if ((economy < 17)):
         if ((economy <= 25)):
-            self.SetHoldings("SPY", -0.5)
-            self.SetHoldings("QQQ", 0.5)
+            self.Liquidate("SPY")
+           # self.SetHoldings("SPY", 0.5)
             
         #elif (((economy < 32) and (economy >=17)) or (inversion > 0)):
         elif (((economy <= 31) and (economy >25)) or (inversion > 0)):
-            self.SetHoldings("SPY", -0.3)
-            self.SetHoldings("QQQ", 0.7)
+            self.SetHoldings("SPY", 0.4)
+           # self.SetHoldings("SPY", 0.7)
         #elif 
         #    self.SetHoldings("SPY", -0.3)
         #    for i in self.long:
@@ -420,8 +420,8 @@ class BasicTemplateAlgorithm(QCAlgorithm):
         #        self.SetHoldings(i, 0.7/self.num_fine)
         
         else:  
-            self.Liquidate("SPY")
-            self.SetHoldings("QQQ", 1)         
+          #  self.Liquidate("SPY")
+            self.SetHoldings("SPY", 1)         
     # Alternatively, you can liquidate all the stocks at the end of each month.
     # Which method to choose depends on your investment philosiphy 
     # if you prefer to realized the gain/loss each month, you can choose this method.
@@ -490,7 +490,7 @@ class EconomyScore(PythonData):
         
         try:
             score.Symbol = config.Symbol #For the symbol always use conifg.Symbol
-            score.Time = datetime.strptime(data[0], '%Y-%m-%d') + timedelta(hours=20) #Could also use timedelta(hours=20) We add some time here because we dont want the data to be accessed before its known. (Look ahead bias)
+            score.Time = datetime.strptime(data[0], '%Y-%m-%d') + timedelta(hours=0) #Could also use timedelta(hours=20) We add some time here because we dont want the data to be accessed before its known. (Look ahead bias)
             content = data[1].lower() 
             
             score.Value = float(data[1])
