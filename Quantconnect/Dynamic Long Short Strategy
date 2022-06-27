@@ -30,7 +30,7 @@ class BasicTemplateAlgorithm(QCAlgorithm):
     
         self.spy = self.AddEquity("SPY", Resolution.Daily).Symbol
         self.SetBenchmark('SPY')
-        self.nas = self.AddEquity("NDX", Resolution.Daily).Symbol
+        self.nas = self.AddEquity("QQQ", Resolution.Daily).Symbol
         self.UniverseSettings.Resolution = Resolution.Daily
         
         self.AddUniverse(self.CoarseSelectionFunction,self.FineSelectionFunction)
@@ -405,12 +405,12 @@ class BasicTemplateAlgorithm(QCAlgorithm):
         #if ((economy < 17)):
         if ((economy <= 25)):
             self.SetHoldings("SPY", -0.5)
-            self.SetHoldings("NDX", 0.5)
+            self.SetHoldings("QQQ", 0.5)
             
         #elif (((economy < 32) and (economy >=17)) or (inversion > 0)):
         elif (((economy <= 31) and (economy >25)) or (inversion > 0)):
             self.SetHoldings("SPY", -0.3)
-            self.SetHoldings("NDX", 0.7)
+            self.SetHoldings("QQQ", 0.7)
         #elif 
         #    self.SetHoldings("SPY", -0.3)
         #    for i in self.long:
@@ -421,7 +421,7 @@ class BasicTemplateAlgorithm(QCAlgorithm):
         
         else:  
             self.Liquidate("SPY")
-            self.SetHoldings("NDX", 1)         
+            self.SetHoldings("QQQ", 1)         
     # Alternatively, you can liquidate all the stocks at the end of each month.
     # Which method to choose depends on your investment philosiphy 
     # if you prefer to realized the gain/loss each month, you can choose this method.
