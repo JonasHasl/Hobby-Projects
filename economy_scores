@@ -1,1 +1,7 @@
+The Economy Score is based on financial indicators adjusted for look-ahead bias such that all values are known to the financial markets when the score is calculated.
+The score is made based on a maximizer function of either sortino or sharpe ratio or a combination of these. The economy is ranked by the scores of the given indicators at a given point in time.
+Thus, the indicators are ranked and compared to values of other points in a time period since the year 2000. Combining all the indicator scores, a combined rank is given which
+is normalized to a score between 0 and 100.
+
+
 https://www.dropbox.com/home?preview=finalscores1986.csv
