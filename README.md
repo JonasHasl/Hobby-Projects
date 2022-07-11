@@ -7,3 +7,7 @@ Projects worked on during the free time
 the Quiver Quantitative Data Set.
 
 -To deploy the risk adjusted algorithm that increases/decreases exposure based on economic conditions (See economy score) , the link is provided in the algorithm.
+
+-Link to Finvest: strsel.ela-as.no
+
+-Link to dropbox file containing predictions for upcoming months stock returns: https://www.dropbox.com/home?preview=finalscores1986.csv&preview=finalscores1986.csv
