@@ -3,5 +3,9 @@ The score is made based on a maximizer function of either sortino or sharpe rati
 Thus, the indicators are ranked and compared to values of other points in a time period since the year 2000. Combining all the indicator scores, a combined rank is given which
 is normalized to a score between 0 and 100.
 
+The predictions for next months return are based on the same indicators as above using a neural network with several hidden layers. On each layer a dropout rate of 0.4 has been used to avoid 
+overfitting. An EarlyStopping function has also been used to make the model stop when there has been no improvements in the validation loss for a given amount of epochs. This is also 
+a measure to avoid overfitting.
+
 
 https://www.dropbox.com/home?preview=finalscores1986.csv
