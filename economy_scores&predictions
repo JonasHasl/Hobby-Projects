@@ -7,5 +7,8 @@ The predictions for next months return are based on the same indicators as above
 overfitting. An EarlyStopping function has also been used to make the model stop when there has been no improvements in the validation loss for a given amount of epochs. This is also 
 a measure to avoid overfitting.
 
+-Data is adjusted for look-ahead bias
+-Data is detrended and adjusted where it seemed fit to make the series stationary.
+-Autocorrelation has not yet been accounted for
 
 https://www.dropbox.com/home?preview=finalscores1986.csv
