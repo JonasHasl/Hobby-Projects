@@ -12,7 +12,7 @@ the Quiver Quantitative Data Set.
 
 -Power Automate does not let one share projects yet
 
--Source code for web scraping of financial website of all tickers on Nasdaq100 and S&P500 can be sent on request
+-Source code for web scraping of financial website for data on all tickers on Nasdaq100 and S&P500 can be sent on request
 
 -Source code for app Finvest can be explained upon request
 
