@@ -11,3 +11,11 @@ the Quiver Quantitative Data Set.
 -Link to dropbox file containing predictions for upcoming months stock returns: https://www.dropbox.com/home?preview=finalscores1986.csv&preview=finalscores1986.csv
 
 -Power Automate does not let one share projects yet
+
+-Source code for web scraping of financial website of all tickers on Nasdaq100 and S&P500 can be sent on request
+
+-Source code for app Finvest can be explained upon request
+
+-Source code for financial macroeconomic data retrieved from web scraping and FRED API with combined score for the economy and LSTM Neural Network
+model for predicting future returns can be sent on request. To deploy code it is necessary to retrieve an API key from FRED.
+
