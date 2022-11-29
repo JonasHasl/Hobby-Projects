@@ -264,7 +264,10 @@ class BasicTemplateAlgorithm(QCAlgorithm):
                 #equity_growth = sortedByfactor10.index(ele)
                 #margin1 = sortedByfactor10.index(ele)
                 
-                score = [] #Assign weights to each factor here, example: [(revenue_growth)*40, (margin)*2, ....]
+                score = [(revenue_growth)*40,
+                         (margin)*20]
+                
+                #Assign weights to each factor here, example: [(revenue_growth)*40, (margin)*2, ....]
                          
                          
                 score = sum(score)
