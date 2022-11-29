@@ -8,7 +8,7 @@ the Quiver Quantitative Data Set.
 
 -Link to Finvest: https://strsel.herokuapp.com/
 
--Link to dropbox file containing predictions for upcoming months stock returns: https://www.dropbox.com/home?preview=finalscores1986.csv&preview=finalscores1986.csv
+-Link to dropbox file containing predictions for upcoming months stock returns: https://www.dropbox.com/s/dcl5uqdy1sq8gob/finalpredictionsNN.csv?dl=0
 
 -Power Automate does not let one share projects yet
 
