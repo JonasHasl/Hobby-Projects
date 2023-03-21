@@ -8,8 +8,6 @@ the Quiver Quantitative Data Set.
 
 -Link to dropbox file containing predictions for upcoming months stock returns: https://www.dropbox.com/s/dcl5uqdy1sq8gob/finalpredictionsNN.csv?dl=0
 
--Power Automate does not let one share projects yet
-
 -Source code for web scraping financial website for data on all tickers on Nasdaq100 and S&P500 can be sent on request
 
 -Source code for app Finvest can be explained upon request
