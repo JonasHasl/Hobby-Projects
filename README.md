@@ -6,8 +6,6 @@ the Quiver Quantitative Data Set.
 
 -To deploy the risk adjusted algorithm that increases/decreases exposure based on economic conditions (See economy score) , the link is provided in the algorithm. It is possible to add any ETF or stocks to the strategy.
 
--Link to Finvest: https://strsel.herokuapp.com/
-
 -Link to dropbox file containing predictions for upcoming months stock returns: https://www.dropbox.com/s/dcl5uqdy1sq8gob/finalpredictionsNN.csv?dl=0
 
 -Power Automate does not let one share projects yet
