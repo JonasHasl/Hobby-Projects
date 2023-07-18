@@ -1,9 +1,10 @@
-#This is a Template of dynamic stock selection.
-#You can try your own fundamental factor and ranking method by editing the CoarseSelectionFunction and FineSelectionFunction
+from AlgorithmImports import *
+# Dynamic Stock Selection Algorithm based on Fundamental Factors
 import operator
 from math import ceil,floor
 from itertools import groupby
 from datetime import datetime, timedelta
+import pandas as pd
 
 from QuantConnect.Data.UniverseSelection import *
 
@@ -17,29 +18,53 @@ class BasicTemplateAlgorithm(QCAlgorithm):
     # Number of stocks to long/short
         self.num_fine = 7 #Watch out for adjustment of outliers in line 297
         self.symbols = None
+        #self.value = 0
+        #self.inverted=0
+        self.prediction=0
+        #self.currency=8.77
+        self.Portfoliovalue = pd.DataFrame()
 
     def Initialize(self):
-        self.SetCash(13000)
-        self.SetStartDate(2022,3,1)
-        self.SetEndDate(2022,3,20) # if not specified, the Backtesting EndDate would be today 
-        
+        self.SetCash(1000000)
+        self.SetStartDate(2022,1,1)
+        #self.SetEndDate(2022,2,20)
     
-        self.spy = self.AddEquity("QQQ", Resolution.Daily).Symbol
-        self.SetBenchmark('QQQ')
+        self.spy = self.AddEquity("SPY", Resolution.Daily).Symbol
+        self.SetBenchmark('SPY')
         
         self.UniverseSettings.Resolution = Resolution.Daily
         
         self.AddUniverse(self.CoarseSelectionFunction,self.FineSelectionFunction)
         
         self.SetBrokerageModel(BrokerageName.InteractiveBrokersBrokerage, AccountType.Margin)
-        
-        self.SetAlpha(ConstantAlphaModel(InsightType.Price, InsightDirection.Up, timedelta(30)))
+        self.economy_score = self.AddData(EconomyScore, "Economy_Score", Resolution.Daily).Symbol
+        #self.SetAlpha(ConstantAlphaModel(InsightType.Price, InsightDirection.Up, timedelta(30)))
+
 
     # Schedule the rebalance function to execute at the begining of each week
-        self.Schedule.On(self.DateRules.EveryDay(self.spy), 
-        self.TimeRules.AfterMarketOpen(self.spy,180), Action(self.rebalance))
-        
-    
+        self.Schedule.On(self.DateRules.Every(DayOfWeek.Tuesday, DayOfWeek.Friday),#(self.spy), #(self.spy), 
+        self.TimeRules.AfterMarketOpen(self.spy,1), Action(self.rebalance))
+
+        from System.Drawing import Color
+
+        stockPlot = Chart('Strategy Return %')
+        #self.Plot("Strategy Return %", ((self.Portfolio.TotalPortfolioValue -1000000) / 1000000)*100)
+        stockPlot.AddSeries(Series('Strategy Return',SeriesType.Line, '%', Color.Green))
+        self.AddChart(stockPlot)
+
+        self.Schedule.On(self.DateRules.Every(DayOfWeek.Monday), 
+                        self.TimeRules.At(10, 30),
+                        self.Plotting)
+ 
+       
+
+    def Plotting(self):
+        self.Plot("Positions", "Num", len([x.Symbol for x in self.Portfolio.Values if self.Portfolio[x.Symbol].Invested]))
+        #self.Plot("Strategy Return % NOK", 'Strategy Return %', ((((self.Portfolio.TotalPortfolioValue*self.currency)-(self.Initialvalue)) / (self.Initialvalue)))*100)
+        #self.Plot("Portfolio Value NOK", 'Strategy Value', ((self.Portfolio.TotalPortfolioValue)*self.currency))
+
+
+
     def CoarseSelectionFunction(self, coarse):
     # if the rebalance flag is not 1, return null list to save time.
         if self.reb != 1:
@@ -66,14 +91,14 @@ class BasicTemplateAlgorithm(QCAlgorithm):
     # drop stocks which don't have the information we need.
     # you can try replacing those factor with your own factors here
     
-        filtered_fine = [x for x in fine if x.OperationRatios.OperationMargin.ThreeMonths
+        filtered_fine = [x for x in fine if x.OperationRatios.OperationMargin.ThreeMonths != 0
                                             #and x.OperationRatios.OperationMargin.OneYear
                                             #and x.OperationRatios.RevenueGrowth.OneYear
-                                            and x.OperationRatios.RevenueGrowth.ThreeMonths
+                                            and x.OperationRatios.RevenueGrowth.ThreeMonths != 0
                                             #and x.OperationRatios.RevenueGrowth.ThreeYears
                                             #and x.OperationRatios.AssetsTurnover.OneYear
-                                            and x.OperationRatios.AssetsTurnover.ThreeMonths
-                                            and x.OperationRatios.EBITDAMargin.ThreeMonths
+                                            and x.OperationRatios.AssetsTurnover.ThreeMonths != 0
+                                            and x.OperationRatios.EBITDAMargin.ThreeMonths != 0
                                             #and x.OperationRatios.EBITDAMargin.SixMonths
                                             #and x.OperationRatios.EBITDAMargin.OneYear
                                             and x.CompanyReference.PrimaryExchangeID in ["NYS","NAS"]
@@ -84,37 +109,32 @@ class BasicTemplateAlgorithm(QCAlgorithm):
                                             #and x.ValuationRatios.PBRatio
                                             #and x.ValuationRatios.PSRatio
                                             #and x.ValuationRatios.PCFRatio
-                                            #and x.ValuationRatios.PERatio
-                                            #and x.OperationRatios.ROE.ThreeMonths
-                                            #and x.OperationRatios.ROIC.ThreeMonths
-                                            #and x.OperationRatios.ROA.ThreeMonths
+                                            #and x.ValuationRatios.PERatio 
+                                            and x.OperationRatios.ROE.ThreeMonths != 0
+                                            #and x.OperationRatios.ROIC.ThreeMonths 
+                                            and x.OperationRatios.ROA.ThreeMonths != 0
                                             #and x.OperationRatios.FinancialLeverage.OneYear
                                             #and x.FinancialStatements.IncomeStatement.ResearchAndDevelopment.ThreeMonths=> 0
                                             #and x.ValuationRatios.TrailingDividendYield < 0.005
                                             #and x.OperationRatios.NetIncomeGrowth.Value!=0
-                                            and x.OperationRatios.StockholdersEquityGrowth.OneYear
+                                            and x.OperationRatios.StockholdersEquityGrowth.OneYear != 0
                                             and x.SecurityReference.IsPrimaryShare > 0
                                             #and (x.AssetClassification.FinancialHealthGrade!="F")
                                             #and (x.AssetClassification.FinancialHealthGrade!="E")
                                             #and x.FinancialStatements.IncomeStatement.TotalRevenue.TwelveMonths
                                             #and x.SecurityReference.SecurityType == "ST00000001"
-                                            and (x.AssetClassification.MorningstarSectorCode!= 309)
+                                            #and (x.AssetClassification.MorningstarSectorCode!= 309)
                                             and (x.AssetClassification.MorningstarSectorCode!=206)
                                             and (x.AssetClassification.MorningstarIndustryGroupCode!=31055)]
-                                            
-        #for i in filtered_fine:
+                                            #and x.OperationRatios.ROIC.OneYear != 0
+                                            #and x.OperationRatios.ROIC.ThreeMonths != 0]
+                                            #and (x.FinancialStatements.IncomeStatement.ResearchAndDevelopment.ThreeMonths != 0)
+                                            #and (x.EarningReports.BasicAverageShares.ThreeMonths != 0)
+                                            #and (x.EarningReports.BasicEPS.ThreeMonths != 0)]
+        for i in filtered_fine:
+        #ROA/ROE
+             i.roa_ratio = (i.OperationRatios.ROA.ThreeMonths / i.OperationRatios.ROE.ThreeMonths)
         
-             #i.rd_ratio = (i.FinancialStatements.IncomeStatement.ResearchAndDevelopment.ThreeMonths / i.FinancialStatements.IncomeStatement.NetIncome.ThreeMonths)
-        
-             #i.MarketCapi = (i.EarningReports.BasicAverageShares.TwelveMonths *
-               #             i.EarningReports.BasicEPS.TwelveMonths *
-            #                i.ValuationRatios.PERatio)
-             #rd_ratio[i] = (i.FinancialStatements.IncomeStatement.ResearchAndDevelopment.ThreeMonths / 
-             #               i.FinancialStatements.IncomeStatement.NetIncome.OneYear)
-            
-            #market_cap[i] = (i.EarningReports.BasicAverageShares.ThreeMonths *
-            #               i.EarningReports.BasicEPS.TwelveMonths *
-            #               i.ValuationRatios.PERatio)
            
                                     
     
@@ -147,7 +167,7 @@ class BasicTemplateAlgorithm(QCAlgorithm):
         
         #sortedByfactor13 = sorted(filtered_fine, key=lambda x: x.OperationRatios.EBITDAMargin.ThreeMonths, reverse=False)
         
-        sortedByfactor14 = sorted(filtered_fine, key=lambda x: x.ValuationRatios.PERatio, reverse=False)
+        sortedByfactor14 = sorted(filtered_fine, key=lambda x:  x.ValuationRatios.PERatio, reverse=False)
         
         sortedByfactor15 = sorted(filtered_fine, key=lambda x: x.OperationRatios.AssetsTurnover.OneYear, reverse=False)
         
@@ -188,33 +208,9 @@ class BasicTemplateAlgorithm(QCAlgorithm):
         sortedByfactor34 = sorted(filtered_fine, key=lambda x: x.OperationRatios.EBITMargin.ThreeMonths, reverse=False)
         
         sortedByfactor35 = sorted(filtered_fine, key=lambda x: x.OperationRatios.GrossMargin5YrAvg.FiveYears, reverse=False)
+
+        sortedByROARatio = sorted(filtered_fine, key=lambda x: x.roa_ratio, reverse=False)
         
-        #sortedByfactor36 = sorted(filtered_fine, key=lambda x: x.ValuationRatios.TotalYield, reverse=True)
-        
-        #sortedByfactor37 = sorted(filtered_fine, key=lambda x: x.ValuationRatios.SecondYearEstimatedEPSGrowth, reverse=False)
-        
-        #ValuationRatios.SecondYearEstimatedEPSGrowth
-        
-        #OperationRatios.GrossMargin5YrAvg.FiveYears
-        
-        #sortedByfactor32 = sorted(filtered_fine, key=lambda x: x.OperationRatios.GrossMargin.OneYear, reverse=True)
-        
-    
-        #sortedByfactor34 = sorted(filtered_fine, key=lambda x: x.OperationRatios.CapExSalesRatio.OneYear, reverse=False)
-       
-        
-       
-        
-        #sortedByfactor22 = sorted(filtered_fine, key=lambda x: x.OperationRatios.CapExSalesRatio.OneYear, reverse=False)
-        
-        #sortedByfactor21 = sorted(filtered_fine, key=lambda x: x.ValuationRatios.TrailingDividendYield, reverse=True)
-        
-        #sortedByfactor15 = sorted(filtered_fine, key=lambda x: x.ValuationRatios.TrailingDividendYield, reverse=True)
-        #sortedByfactor10 = sorted(filtered_fine, key=lambda x: x.OperationRatios.OperationMargin.ThreeMonths, reverse=False)
-        
-        #sortedByPEvol = sorted(filtered_fine, key=lambda x: x.pevol) 
-        
-        #sortedByrd_ratio = sorted(filtered_fine, key=lambda x: x.rd_ratio)  
         stock_dict = {}
         
         # assign a score to each stock, you can also change the rule of scoring here.
@@ -251,30 +247,31 @@ class BasicTemplateAlgorithm(QCAlgorithm):
                 revenue_growth_reg = sortedByfactor33.index(ele)
                 ebit_margin = sortedByfactor34.index(ele)
                 grossmarginavg = sortedByfactor35.index(ele)
-                #esteps = sortedByfactor37.index(ele)
-                #pe_growth = sortedByfactor36.index(ele)
-                #gross_margin1 = sortedByfactor32.index(ele)
-                #capexsales = sortedByfactor34.index(ele)
+                roatoroe = sortedByROARatio.index(ele)
                 
-                #capex_turnover = sortedByfactor22.index(ele)
-                #div_yield = sortedByfactor36.index(ele)
-                #leverage = sortedByfactor16.index(ele)
-                #dividend_yield = sortedByfactor15.index(ele)
-                #rd_ratio = sortedByrd_ratio.index(ele)
-                #equity_growth = sortedByfactor10.index(ele)
-                #margin1 = sortedByfactor10.index(ele)
                 
-                score = [(revenue_growth)*40,
-                         (margin)*20]
-                
-                #Assign weights to each factor here, example: [(revenue_growth)*40, (margin)*2, ....]
-                         
-                         
+                score = [(gross_margin)*26,
+                        (revenue_growth3)*3,
+                        (assets_turnover)*80,
+                        (ebitda_margin3m)*30,
+                        (revenue_growth3m)*145,
+                        (equity_growth)*9,
+                        (pe_ratio)*2,
+                        (pb_ratio)*2,
+                        (ps_ratio)*2,
+                        (pcf_ratio)*2,
+                        (size_score)*110,
+                        (style_score)*10,
+                        (growth_score)*5,
+                        (grossmarginavg)*15,
+                        (roatoroe)*5]
+
                 score = sum(score)
                 stock_dict[ele] = score
+
                
                 
-        
+        self.Debug('Comined Score %d'%((score)))
         # sort the stocks by their scores
         self.sorted_stock = sorted(stock_dict.items(), key=lambda d:d[1],reverse=True)
         sorted_symbol = [x[0] for x in self.sorted_stock]
@@ -282,62 +279,51 @@ class BasicTemplateAlgorithm(QCAlgorithm):
 
         # sort the top stocks into the long_list and the bottom ones into the short_list
         self.long = [x.Symbol for x in sorted_symbol[:self.num_fine]] # Adjust in sorted_symbol[] if you want to remove outliers or specify how many stocks in self long will be added
-        
+        self.score = score
         return self.long
         
                     
     def OnData(self, data):
-        
+        from System.Drawing import Color
+       # self.Plot("Strategy Return %", 'Strategy Return', ((self.Portfolio.TotalPortfolioValue -1000000) / 1000000)*100)
+       # self.Plot("Economy Score", 'Economy Score', self.value) 
+        if self.economy_score in data:
+           # self.value = data[self.economy_score].Value
+           # self.inverted = data[self.economy_score].GetProperty('Inverted')
+            #self.currency = data[self.economy_score].GetProperty('USDNOK')
+            self.prediction = data[self.economy_score].GetProperty('Prediction')
+
+            
         #if not self.Portfolio.Invested:
-        #self.SetHoldings("SPY", -0.5)
-        pass
+        #self.SetHoldings("SPY", -0.5)self.value, self.inverted,
+        return self.prediction
     
     def rebalance(self):
-    # if this month the stock are not going to be long/short, liquidate it.
+    # if this time period the stock are not going to be long/short, liquidate it.
+        #economy = self.value
+        #inversion = self.inverted
+        prediction = self.prediction
+        #if data.ContainsKey(self.Symbol):
+        #    value = data[self.symbol].Value
+       # self.Debug("Economy Score: " + str(economy))
+        
         long_list = self.long
         spy = self.spy
-        #self.SetHoldings("QQQ", -0.2) 
+
         for i in self.Portfolio.Values:
-            #if (i.Symbol != "QQQ"):
-            if (i.Invested) and (i.Symbol not in long_list):
-                self.Liquidate(i.Symbol) and self.RemoveSecurity(i.Symbol)
-                
-        #self.spy = self.AddEquity("SPY", Resolution.Daily).Symbol
-              #(i.Symbol != "SPY")
-                    
-    # Alternatively, you can liquidate all the stocks at the end of each month.
-    # Which method to choose depends on your investment philosiphy 
-    # if you prefer to realized the gain/loss each month, you can choose this method.
-    
-        #self.Liquidate()
-        
-    # Assign each stock equally. Alternatively you can design your own portfolio construction method
-        #self.SetHoldings(self.long[0], 2/self.num_fine)
-       # for i in self.long[:1]:
-            # self.SetHoldings(i, 2/self.num_fine)
-            #    else:
-      #      self.SetHoldings(i, 1.6/(self.num_fine))
-            
-       # for i in self.long[2:4]:
-    #        # self.SetHoldings(i, 2/self.num_fine)
-            #    else:
-     #       self.SetHoldings(i, 0.96/(self.num_fine))
-            
+            if (i.Symbol != "SPY"):
+                if (i.Invested) and (i.Symbol not in long_list):
+                    self.Liquidate(i.Symbol) and self.RemoveSecurity(i.Symbol)
+       
+        self.Liquidate("SPY")
         for i in self.long:
-            # self.SetHoldings(i, 2/self.num_fine)
-            #    else:
-            #self.SetHoldings(i, self.Portfolio.TotalPortfolioValue*(1/self.num_fine)/self.Portfolio.TotalPortfolioValue)
-            self.SetHoldings(i, 1/self.num_fine)
-            #self.SetHoldings(i, (0.5)/(self.num_fine))
-            
-        
-        
-        self.reb = 1
-       # for i in self.short:
-    #        self.SetHoldings(i, -0.9/self.num_fine) # For shorting
+                self.SetHoldings(i, 1/self.num_fine)  
 
         
-            
+        self.reb = 1
+
+        
+        
         invested = [x.Key for x in self.Portfolio if x.Value.Invested]
         
         for symbol in invested:
@@ -346,3 +332,46 @@ class BasicTemplateAlgorithm(QCAlgorithm):
             quantity = security_holding.Quantity
             price = security_holding.AveragePrice
             self.Debug(str(symbol) + " " + str(quantity))
+
+
+class EconomyScore(PythonData):
+
+    #sia = SentimentIntensityAnalyzer()
+
+    def GetSource(self, config, date, isLive): #Gets source of data.
+        source = "https://www.dropbox.com/s/v8js30v5yftjog6/finalscores1986.csv?dl=1"
+        #source = "https://www.dropbox.com/s/run9sly7c3rfq02/finalscores.csv?dl=1"
+        return SubscriptionDataSource(source, SubscriptionTransportMedium.RemoteFile); # 
+
+    def Reader(self, config, line, date, isLive): # Read the custom data. We need to specify structure of the data. 
+        if not (line.strip() and line[0].isdigit()): #To make sure we dont use the data from the header index, and dont continue if theres no data left.
+            return None
+        
+        data = line.split(',') # OTherwie we split at the commas, as per CSV files. 
+        score = EconomyScore() # Now we save the data to the data variable. 
+        
+        try:
+            score.Symbol = config.Symbol #For the symbol always use conifg.Symbol
+            score.Time = datetime.strptime(data[0], '%Y-%m-%d') + timedelta(hours=0) #Could also use timedelta(hours=20) We add some time here because we dont want the data to be accessed before its known. (Look ahead bias)
+            content = data[1].lower() 
+            
+           # score.Value = float(data[1])
+           # score['Inverted'] = float(data[2])
+            score['Prediction'] = float(data[1])
+            #score['USDNOK'] = float(data[5])
+            #score.Inverted = float(data[2])
+            return score
+
+
+
+            #if "tsla" in content or "tesla" in content:
+            #    tweet.Value = self.sia.polarity_scores(content)["compound"]
+            #else:
+            #    score.Value = 0
+            
+            #tweet["Tweet"] = str(content)
+            
+        except ValueError:
+            return None
+        
+        return score
