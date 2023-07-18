@@ -1,4 +1,4 @@
-# Welcome to my Hobby-Projects for Pre-2023
+# Welcome to my Pre-2023 Hobby-Projects  
 
 -To deploy the algorithms in Quantconnect you have to use the IDE at quantconnect.com and create a user. To deploy WSB strategy, in addition, you need a paid subscription to 
 the Quiver Quantitative Data Set.
