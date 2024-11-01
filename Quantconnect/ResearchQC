@@ -1,0 +1,274 @@
+import scipy
+import re
+import datetime
+import pandas 
+import numpy
+
+%matplotlib inline
+# Imports
+from clr import AddReference
+AddReference("System")
+AddReference("QuantConnect.Common")
+AddReference("QuantConnect.Indicators")
+from System import *
+from QuantConnect import *
+from QuantConnect.Data.Custom import *
+from QuantConnect.Data.Market import TradeBar, QuoteBar
+from QuantConnect.Indicators import *
+from datetime import datetime, timedelta
+import matplotlib.pyplot as plt
+import pandas as pd
+import operator
+import datetime as dt
+from decimal import Decimal
+from io import StringIO
+import random
+#Create an instance
+qb = QuantBook()
+
+# Select asset data
+dates = datetime(2010,1,1), datetime.now()
+start_date = datetime(2010,1,1)
+end_date = datetime.now()
+
+link = 'https://www.dropbox.com/scl/fi/8vr7d6qrmw1rid6kc3grq/tickers.csv?rlkey=fkt5vxkatudc8nddkicq7oejs&st=udgj5kxo&dl=1'
+strFile = qb.Download(link)
+fileDf = pd.read_csv(StringIO(strFile), sep = ',')
+symbols = [x for x in list(fileDf['Symbol'])]
+symbols_df = pd.DataFrame(pd.Series(symbols)).drop_duplicates()
+symbols_df.columns=['Symbol']
+symbols = list(symbols_df[~symbols_df['Symbol'].isin(['TT'])]['Symbol'])
+
+symbols.append('FLEXF')
+del fileDf
+del strFile
+#symbols= ['AAPL']
+
+#symbols1 = ['CDNS', 'NVDA', 'TGT,', 'TSLA', 'NOW', 'HSY', 'LULU', 'NFLX', 'QCOM', 'EL'] 
+#symbols = symbols[1:]
+
+# Create an empty list to hold the Symbol objects
+symbol_objects = []
+period = (end_date - start_date).days
+# Iterate through the symbol strings and add each one to QuantBook
+for symbol_str in symbols:
+    symbol_obj = qb.AddEquity(symbol_str).Symbol
+    symbol_objects.append(symbol_obj)
+
+# Now you have a list of Symbol objects that you can use with the History function
+history = qb.History(symbol_objects, timedelta(days=period), Resolution.Daily)
+
+
+close_prices = history['close']
+df1 = qb.GetFundamental(symbols, ("OperationRatios.RevenueGrowth.ThreeMonths"), *dates)
+print("Revenue Growth Retrieved: 1/8 Done")
+
+df2 = qb.GetFundamental(symbols, ("OperationRatios.EBITDAMargin.ThreeMonths"), *dates)
+print("EBITDA Margin Retrieved: 2/8 Done")
+
+df3 = qb.GetFundamental(symbols, ("OperationRatios.AssetsTurnover.ThreeMonths"), *dates)
+print("Assets Turnover Retrieved: 3/8 Done")
+
+df4 = qb.GetFundamental(symbols, ("OperationRatios.GrossMargin.ThreeMonths"), *dates)
+print("Gros Margin Retrieved: 4/8 Done")
+
+df5 = qb.GetFundamental(symbols, ("AssetClassification.SizeScore"), *dates)
+print("Revenue Growth Retrieved: 5/8 Done")
+
+df6 = qb.GetFundamental(symbols, ("AssetClassification.GrowthScore"), *dates)
+print("Size Score Retrieved: 6/8 Done")
+
+#df7 = qb.GetFundamental(symbols, ("AssetClassification.StyleScore"), *dates)
+#print("Style Score Retrieved: 7/13 Done")
+
+df8 = qb.GetFundamental(symbols, ("EarningRatios.EquityPerShareGrowth.ThreeMonths"), *dates)
+print("Equity per Share Growth Retrieved: 7/8 Done")
+
+#df9 = qb.GetFundamental(symbols, ("ValuationRatios.PBRatio"), *dates)
+#print("PB Ratio Retrieve: 9/13 Done")
+
+df10 = qb.GetFundamental(symbols, ("OperationRatios.GrossMargin5YrAvg.FiveYears"), *dates)
+print("Gross Margin 5 Yr Avg Retrieved: 8/8 Done")
+
+#df11 = qb.GetFundamental(symbols, ("ValuationRatios.PSRatio"), *dates)
+#print("PS Ratio Retrieved: 11/13 Done")
+
+#df12 = qb.GetFundamental(symbols, ("ValuationRatios.PCFRatio"), *dates)
+#print("PCF Ratio Retrieved: 12/13 Done")
+
+#df13 = qb.GetFundamental(symbols, ("MarketCap"), *dates)
+#df13 = qb.GetFundamental(symbols, ("ValuationRatios.PERatio"), *dates)
+#print("PE Ratio Retrieved: 13/13 Done")
+
+#df9 = qb.GetFundamental(symbols, ("CompanyReference.BusinessCountryID"), *dates)
+#df16 = qb.GetFundamental(symbols, ("SecurityReference.IPODate"), *dates)
+df14 = qb.GetFundamental(symbols, ("OperationRatios.RevenueGrowth.ThreeYears"), *dates)
+df15 = qb.GetFundamental(symbols, ("CompanyReference.ShortName"), *dates)
+df16 =  qb.GetFundamental(symbols, ("AssetClassification.MorningstarSectorCode"), *dates)
+
+
+dataframes = [df1, df2, df3, df4, df5, df6, df8, df10, df14, df15, df16]
+del df1, df2, df3, df4, df5, df6, df8, df10, df14, df15, df16
+keys = [
+    "Revenue Growth",
+    "EBITDA Margin",
+    "Assets Turnover",
+    "Gross Margin",
+    "Size Score",
+    "Growth Score",
+    "Equity per Share Growth",
+    "Gross Margin 5 Yr Avg",
+    "Revenue Growth Three Years",
+    "Company Short Name",
+    "Sector Code"
+]
+
+
+final_frames = []  # To hold the processed dataframes
+
+for df, key in zip(dataframes, keys):
+    df_final = df.reset_index()
+    df_final = df_final.rename({'index':'Date'}, axis=1)
+    df_final = df_final.melt(id_vars=['Date'], var_name='Symbol', value_name=key)  # use key here
+    final_frames.append(df_final)
+
+#results = pd.concat(final_frames)
+#results
+
+merged_df = final_frames[0]  # Initialize with the first dataframe
+
+for df in final_frames[1:]:  # Iterate over the rest dataframes
+    merged_df = pd.merge(merged_df, df, on=['Symbol', 'Date'], how='outer')
+
+merged_df['Symbol'] = merged_df['Symbol'].str.split(' ').str[0]
+merged_df = merged_df[merged_df['Sector Code'] != 206].copy()
+#returns['Date'] = pd.to_datetime(returns['Date'])
+
+#merged_df = merged_df.merge(returns, on=['Date', 'Symbol'])
+
+merged_df.sort_values(['Symbol', 'Date'], ascending=True, inplace=True)
+
+del dataframes
+close_prices = close_prices.reset_index()
+close_prices.symbol = close_prices['symbol'].astype(str).str.split(' ').str[0]
+close_prices.columns = ['Symbol', 'Date', 'Close']
+close_prices['Date'] = pd.to_datetime(close_prices['Date']).dt.date
+merged_df['Date'] = pd.to_datetime(merged_df['Date']).dt.date
+merged_df['Symbol'] = merged_df['Symbol'].str.split(' ').str[0]
+
+merged_df = merged_df.merge(close_prices, on=['Date', 'Symbol'])
+merged_df['Returns'] = merged_df.groupby('Symbol')['Close'].pct_change().replace({np.inf:0}).fillna(0)
+#merged_df.dropna(how='any', inplace=True)
+#merged_df = merged_df.fillna(0)
+merged_df['revenue_growth_score'] = merged_df.groupby('Date')['Revenue Growth'].rank(ascending=False)
+merged_df['ebitda_margin_score'] = merged_df.groupby('Date')['EBITDA Margin'].rank(ascending=False)
+merged_df['assets_turnover_score'] = merged_df.groupby('Date')['Assets Turnover'].rank(ascending=False)
+merged_df['gross_margin_score'] = merged_df.groupby('Date')['Gross Margin'].rank(ascending=False)
+merged_df['size_score_score'] = merged_df.groupby('Date')['Size Score'].rank(ascending=False)
+merged_df['growth_score'] = merged_df.groupby('Date')['Growth Score'].rank(ascending=False)
+#merged_df['style_score'] = merged_df.groupby('Date')['Style Score'].rank(ascending=False)
+#merged_df['pbratio_score'] = merged_df.groupby('Date')['PB Ratio'].rank(ascending=False)
+#merged_df['psratio_score'] = merged_df.groupby('Date')['PS Ratio'].rank(ascending=False)
+#merged_df['pcf_score'] = merged_df.groupby('Date')['PCF Ratio'].rank(ascending=False)
+merged_df['equity_growth_score'] = merged_df.groupby('Date')['Equity per Share Growth'].rank(ascending=False)
+#merged_df['peratio_score'] = merged_df.groupby('Date')['PE Ratio'].rank(ascending=False)
+merged_df['grossmargin_avg_score'] = merged_df.groupby('Date')['Gross Margin 5 Yr Avg'].rank(ascending=False)
+merged_df['revenue_growth3_score'] = merged_df.groupby('Date')['Revenue Growth Three Years'].rank(ascending=False)
+merged_df['Following Day Return'] = merged_df.groupby(['Symbol'])['Returns'].shift(-1).fillna(0)
+
+#print(optimal_weigths)
+#optimal_weigths = [80.17887815888247, 238.73434421586967, 63.57948570360098, 1.717441596965962, 134.90082990054134, 15.850151477799066, 81.36923198236018, 42.01022826258242, 42.01022826258242, 7.727055518521507]
+
+#optimal_weigths 
+new_weights =  [318.36803958,  87.09208031,  61.83449946,  65.23324547, 210.6988024,
+   7.24140358]
+
+optimal_weights = [43.6984707, 336.91775, 89.7856565, 90.5413262, 93.7352753, 128.58422, 26.6487375, 7.79024001, 0.0741299817, 7.00917085]
+optimal_weights = [22.798240793459467,
+ 375.9245525070132,
+ 164.57483290954815,
+ 62.232738356714236,
+ 106.43120016614762,
+ 39.94906409397847,
+ 42.008001045725116,
+ 18.754393602060237,
+ 79.53218236147748,
+ 7.003254233806252]
+
+optimal_weights =[29.53452460766563,
+ 379.42512020648763,
+ 149.55119550508016,
+ 46.65732017355395,
+ 131.06845999471477,
+ 48.77557384612145,
+ 47.12049221695753,
+ 23.98860932493517,
+ 59.17663212742945,
+ 7.002084715946076] 
+
+optimal_weights = [19.958493173673652,
+ 369.74151534181334,
+ 177.9123251963528,
+ 6.274005356598877,
+ 97.1052273592249,
+ 34.233708522169366,
+ 23.269235208906412,
+ 1.9284604735313629,
+ 28.18366620979556,
+ 7.004841612448389]
+
+optimal_weights =[26.708810503436897,
+ 345.0756811200364,
+ 161.80699206690707,
+ 91.66122866623468,
+ 127.31167728264163,
+ 20.017352030746906,
+ 63.85415892251014,
+ 4.212297277520136,
+ 116.57782403481968,
+ 7.002581661892965]
+
+optimal_weights= [14.632666581992353,
+ 257.0554355945928,
+ 195.09988025088893,
+ 2.5718521134385526,
+ 263.2997224929312,
+ 0.14319909388849794,
+ 4.95199766659271,
+ 28.621052780505764,
+ 5.781369982087469,
+ 7.006785439813621]
+
+optimal_weights = [ 15.77348406, 292.97089203,  58.33242283,   6.21406843, 104.80937414, 3.60807391,  32.52156683,  18.8545764,    7.02161751]
+#merged_df['combined_alpha'] = ((merged_df['revenue_growth_score'])*new_weights[0] +
+#                            (merged_df['ebitda_margin_score'])*new_weights[1] +
+#                            (merged_df['gross_margin_score'])*new_weights[2]+
+#                             (merged_df['assets_turnover_score'])*new_weights[3]+
+#                             (merged_df['size_score_score'])*new_weights[4])
+merged_df['combined_alpha'] = ((merged_df['ebitda_margin_score'])*optimal_weights[0]+ 
+                          (merged_df['revenue_growth_score'])*optimal_weights[1] + 
+                          (merged_df['assets_turnover_score'])*optimal_weights[2] + 
+                          (merged_df['gross_margin_score'])*optimal_weights[3] +
+                          (merged_df['size_score_score'])*optimal_weights[4] +
+                          (merged_df['growth_score'])*optimal_weights[5] +
+                          #(merged_df['style_score']*optimal_weigths[6])+
+                         (merged_df['equity_growth_score'])*optimal_weights[6]+
+                         #(merged_df['pbratio_score'])*optimal_weigths[8]+
+                         #(merged_df['psratio_score'])*optimal_weigths[9]+
+                         #(merged_df['pcf_score'])*optimal_weigths[10] +
+                         #(merged_df['peratio_score'])*optimal_weigths[11] + 
+                         (merged_df['grossmargin_avg_score'])*optimal_weights[7] #+
+                         #(merged_df['revenue_growth3_score'])*optimal_weights[9]
+                         )
+
+
+merged_df = merged_df.sort_values(['Date', 'combined_alpha'
+], ascending=[False, True])
+#merged_df = merged_df.reset_index()
+
+#df.filter(items=['one', 'three'])
+
+#merged_df = merged_df.T
+
+merged_df.head(7)
+
