@@ -1,4 +1,4 @@
-# Welcome to my Pre-2023 Hobby-Projects  
+# Welcome to my Hobby-Projects  
 
 -To deploy the algorithms in Quantconnect you have to use the IDE at quantconnect.com and create a user. To deploy WSB strategy, in addition, you need a paid subscription to 
 the Quiver Quantitative Data Set.
@@ -9,5 +9,5 @@ the Quiver Quantitative Data Set.
 
 -Source code for app Finvest can be explained upon request
 
--Source code for financial macroeconomic data retrieved from web scraping and FRED API with combined score for the economy can be sent upon request. To deploy code it is necessary to retrieve an API key from FRED.
+-Source code for financial macroeconomic data retrieved from FRED API and multpl.com with combined score for the economy can be sent upon request. To deploy code it is necessary to retrieve an API key from FRED.
 
