@@ -15,6 +15,13 @@ Check your configuration:
 git config --list
 ```
 
+## Extra: Git Workflow
+<img width="1901" height="991" alt="{745D30F9-1FC7-4300-A0F5-E54297E47FCE}" src="https://github.com/user-attachments/assets/4bf8d905-3dd9-439d-8cea-4dfbdc19a638" />
+
+<img width="546" height="221" alt="image" src="https://github.com/user-attachments/assets/3d2927f8-408f-4dd2-a751-821d5e522deb" />
+
+<img width="553" height="298" alt="image" src="https://github.com/user-attachments/assets/56bcb3e2-9394-49c8-b0f6-83a8142a9ef0" />
+
 
 ## 2. Cloning a Repository
 
